@@ -5,12 +5,11 @@ import cv2
 from ok import Logger, TaskDisabledException
 from src.tasks.CommissionsTask import CommissionsTask, QuickMoveTask, Mission
 from src.tasks.DNAOneTimeTask import DNAOneTimeTask
-from src.tasks.BaseCombatTask import BaseCombatTask
 
 logger = Logger.get_logger(__name__)
 
 
-class AutoExploration(DNAOneTimeTask, BaseCombatTask, CommissionsTask):
+class AutoExploration(DNAOneTimeTask, CommissionsTask):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -27,7 +26,6 @@ class AutoExploration(DNAOneTimeTask, BaseCombatTask, CommissionsTask):
         self.setup_commission_config()
         self.name = "自动探险"
         self.action_timeout = 10
-        self.current_round = -1
         self.quick_move_task = QuickMoveTask(self)
         
     def run(self):
@@ -52,6 +50,7 @@ class AutoExploration(DNAOneTimeTask, BaseCombatTask, CommissionsTask):
             if self.in_team():
                 self.progressing = self.find_serum()
                 if self.progressing:
+                    self.quick_move_task.stop()
                     _skill_time = self.use_skill(_skill_time)
                     if not _wait_next_wave and time.time() - _start_time >= self.config.get('任务超时时间', 120):
                         _wait_next_wave = True

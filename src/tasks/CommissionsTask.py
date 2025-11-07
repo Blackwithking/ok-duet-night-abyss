@@ -3,7 +3,8 @@ import time
 import cv2
 from enum import Enum
 
-from src.tasks.BaseDNATask import BaseDNATask, isolate_white_text_to_black
+from src.tasks.BaseDNATask import isolate_white_text_to_black
+from src.tasks.BaseCombatTask import BaseCombatTask
 
 class Mission(Enum):
     START = 1
@@ -11,10 +12,28 @@ class Mission(Enum):
     STOP = 3
     GIVE_UP = 4
 
-class CommissionsTask(BaseDNATask):
+class CommissionsTask(BaseCombatTask):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.current_round = -1
+        self.current_wave = -1
+
+    def setup_commission_config(self):
+        self.default_config.update({
+            '委托手册': '不使用',
+            '使用技能': '不使用',
+            '技能释放频率': 5,
+            '启用自动穿引共鸣': True,
+            '发出声音提醒': True
+        })
+        self.config_description.update({
+            '技能释放频率': '毎几秒释放一次技能',
+            '启用自动穿引共鸣': '在需要跑图时时启用触发任务的自动穿引共鸣',
+            '发出声音提醒': '在需要时发出声音提醒'
+        })
+        self.config_type['委托手册'] = {'type': 'drop_down', 'options': ['不使用', '100%', '200%', '800%', '2000%']}
+        self.config_type['使用技能'] = {'type': 'drop_down', 'options': ['不使用', '战技', '终结技']}
 
     def find_quit_btn(self, threshold = 0):
         continue_box = self.box_of_screen_scaled(2560, 1440, 798, 972, 855, 1026, name="quit_mission", hcenter=True)
@@ -61,32 +80,6 @@ class CommissionsTask(BaseDNATask):
         else:
             raise Exception("等待开始任务超时")
         self.choose_drop_rate(timeout)
-        
-    def choose_drop_rate(self, timeout=10):
-        action_timeout = self.safe_get("action_timeout", timeout)
-        self.choose_drop_rate_item()
-        self.click_until(
-            click_func=lambda: self.wait_click_start_btn(time_out=0.2, raise_if_not_found=False),
-            check_func=lambda: not self.find_start_btn(),
-            time_out=action_timeout
-        )
-
-    def give_up_mission(self, timeout=10):
-        action_timeout = self.safe_get("action_timeout", timeout)
-        box = self.box_of_screen_scaled(2560, 1440, 1310, 788, 1352, 830, name="start_mission", hcenter=True)
-        self.open_in_mission_menu()
-
-        self.click_until(
-            click_func=lambda: self.click_relative(0.95, 0.91),
-            check_func=lambda: self.find_start_btn(box=box),
-            time_out=action_timeout
-        )
-
-        self.click_until(
-            click_func=lambda: self.wait_click_start_btn(box=box, time_out=0.2, raise_if_not_found=False),
-            check_func=lambda: not self.find_start_btn(box=box),
-            time_out=action_timeout
-        )
 
     def restart_mission(self, timeout=10):
         action_timeout = self.safe_get("action_timeout", timeout)
@@ -98,7 +91,52 @@ class CommissionsTask(BaseDNATask):
             time_out=action_timeout
         )
         self.start_mission(action_timeout)
+
+    def give_up_mission(self, timeout=10):
+        action_timeout = self.safe_get("action_timeout", timeout)
+        box = self.box_of_screen_scaled(2560, 1440, 1310, 788, 1352, 830, name="start_mission", hcenter=True)
+        self.open_in_mission_menu()
+
+        self.click_until(
+            click_func=lambda: self.click_relative(0.95, 0.91),
+            check_func=lambda: self.find_start_btn(box=box),
+            time_out=action_timeout
+        )
+        self.sleep(0.5)
+        self.click_until(
+            click_func=lambda: self.wait_click_start_btn(box=box, time_out=0.2, raise_if_not_found=False),
+            check_func=lambda: not self.find_start_btn(box=box),
+            time_out=action_timeout
+        )
+
+    def continue_mission(self, timeout=10):
+        if self.in_team():
+            return False
+        action_timeout = self.safe_get("action_timeout", timeout)
+        continue_btn = self.wait_until(self.find_continue_btn, time_out=action_timeout, raise_if_not_found=True)
+        self.click_until(
+            click_func=lambda: self.click_box(continue_btn),
+            check_func=lambda: not self.find_continue_btn(),
+            time_out=action_timeout
+        )
+        self.sleep(0.5)
+        start_box = self.box_of_screen_scaled(2560, 1440, 1074, 943, 1120, 990, name="continue_mission", hcenter=True)
+        self.click_until(
+            click_func=lambda: self.wait_click_start_btn(time_out=0.2, box=start_box, raise_if_not_found=False),
+            check_func=lambda: not self.find_start_btn(box=start_box),
+            time_out=action_timeout
+        )
+        return True
         
+    def choose_drop_rate(self, timeout=10):
+        action_timeout = self.safe_get("action_timeout", timeout)
+        self.choose_drop_rate_item()
+        self.click_until(
+            click_func=lambda: self.wait_click_start_btn(time_out=0.2, raise_if_not_found=False),
+            check_func=lambda: not self.find_start_btn(),
+            time_out=action_timeout
+        )
+
     def choose_drop_rate_item(self):
         if not hasattr(self, "config"):
             return
@@ -115,22 +153,6 @@ class CommissionsTask(BaseDNATask):
             self.click_relative(0.68, 0.56)
         self.log_info(f"使用委托手册: {drop_rate}")
         self.sleep(0.5)
-
-    def setup_commission_config(self):
-        self.default_config.update({
-            '委托手册': '不使用',
-            '使用技能': '不使用',
-            '技能释放频率': 5,
-            '启用自动穿引共鸣': True,
-            '发出声音提醒': True
-        })
-        self.config_description.update({
-            '技能释放频率': '毎几秒释放一次技能',
-            '启用自动穿引共鸣': '在需要跑图时时启用触发任务的自动穿引共鸣',
-            '发出声音提醒': '在需要时发出声音提醒'
-        })
-        self.config_type['委托手册'] = {'type': 'drop_down', 'options': ['不使用', '100%', '200%', '800%', '2000%']}
-        self.config_type['使用技能'] = {'type': 'drop_down', 'options': ['不使用', '战技', '终结技']}
 
     def use_skill(self, skill_time):
         if not hasattr(self, "config"):
@@ -152,7 +174,7 @@ class CommissionsTask(BaseDNATask):
             try:
                 self.current_round = int(texts[0].name)
             except:
-                pass
+                return
             self.info_set("当前轮次", self.current_round)
 
     def get_wave_info(self):
@@ -161,38 +183,18 @@ class CommissionsTask(BaseDNATask):
         mission_info_box = self.box_of_screen_scaled(2560, 1440, 275, 372, 360, 470, name="mission_info", hcenter=True)
         texts = self.ocr(box=mission_info_box, frame_processor=isolate_white_text_to_black, match=re.compile(r'\d/\d'))
         if texts and len(texts) == 1:
-            prev_wave = self.current_wave
             try:
                 if (m := re.match(r'(\d)/\d', texts[0].name)):
                     self.current_wave = int(m.group(1))
             except:
-                pass
-            if prev_wave != self.current_wave:
-                self.info_set("当前波次", self.current_wave)
+                return
+            self.info_set("当前波次", self.current_wave)
 
     def wait_until_get_wave_info(self):
         self.log_info('等待波次信息...')
         while self.current_wave == -1:
             self.get_wave_info()
-            self.sleep(0.25)
-
-    def continue_mission(self, timeout=10):
-        if self.in_team():
-            return False
-        action_timeout = self.safe_get("action_timeout", timeout)
-        continue_btn = self.find_continue_btn()
-        self.click_until(
-            click_func=lambda: self.click_box(continue_btn),
-            check_func=lambda: not self.find_continue_btn(),
-            time_out=action_timeout
-        )
-        start_box = self.box_of_screen_scaled(2560, 1440, 1074, 943, 1120, 990, name="continue_mission", hcenter=True)
-        self.click_until(
-            click_func=lambda: self.wait_click_start_btn(time_out=0.2, box=start_box, raise_if_not_found=False),
-            check_func=lambda: not self.find_start_btn(box=start_box),
-            time_out=action_timeout
-        )
-        return True
+            self.sleep(0.2)
         
     def handle_mission_interface(self, stop_func=lambda: False):
         if self.in_team():
@@ -203,7 +205,7 @@ class CommissionsTask(BaseDNATask):
         elif self.find_continue_btn():
             if stop_func():
                 return Mission.STOP
-            self.continue_mission(stop_func)
+            self.continue_mission()
             return Mission.CONTINUE
         elif self.find_esc_menu():
             self.give_up_mission()
@@ -217,18 +219,18 @@ class CommissionsTask(BaseDNATask):
 class QuickMoveTask:
     def __init__(self, owner: CommissionsTask):
         self.owner = owner
-        self.owner.move_task = None
+        self.owner._move_task = None
         
     def run(self):
         if not hasattr(self.owner, "config"):
             return
         if self.owner.config.get('启用自动穿引共鸣', False):
-            if not self.owner.move_task:
+            if not self.owner._move_task:
                 from src.tasks.AutoMoveTask import AutoMoveTask
-                self.owner.move_task = self.owner.get_task_by_class(AutoMoveTask)
-            self.owner.move_task.run()
+                self.owner._move_task = self.owner.get_task_by_class(AutoMoveTask)
+            self.owner._move_task.run()
 
     def stop(self):
-        if self.owner.move_task:
-            self.owner.move_task.stop_listener()
+        if self.owner._move_task:
+            self.owner._move_task.stop()
         

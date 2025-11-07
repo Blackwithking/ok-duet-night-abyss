@@ -45,16 +45,14 @@ class AutoMoveTask(BaseCombatTask, TriggerTask):
             self.listener = None
     
     def run(self):
-        ret = False
         if not self.in_team():
-            return ret
+            return
         
         if not self.listener:
             self.listener = mouse.Listener(on_click=self.on_click)
             self.listener.start()
 
         while self.manual_activate:
-            ret = True
             try:
                 self.do_move()
             except CharDeadException:
@@ -63,23 +61,21 @@ class AutoMoveTask(BaseCombatTask, TriggerTask):
             except TriggerDeactivateException as e:
                 logger.info(f'auto_move_task_deactivate {e}')
                 break
-            if self.is_down:
-                self.mouse_up()
-                self.is_down = False
-        
-        return ret
+        if self.is_down:
+            self.mouse_up()
+        return 
     
     def do_move(self):
-        self.is_down = True
         self.mouse_down()
-        self.sleep_check(self.config.get('按下时间', 0.50))
+        self.is_down = True
+        self.sleep(self.config.get('按下时间', 0.50))
         self.mouse_up()
         self.is_down = False
         self.sleep_check(self.config.get('间隔时间', 0.45))
 
     def sleep_check(self, sec):
         remaining = sec
-        step = 0.25
+        step = 0.2
         while remaining > 0:
             s = step if remaining > step else remaining
             self.sleep(s)

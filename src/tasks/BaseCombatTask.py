@@ -28,26 +28,26 @@ class BaseCombatTask(CombatCheck):
         self.char = None
 
     def get_ultimate_key(self):
-        """获取共鸣解放技能的按键。
+        """获取终结技的按键。
 
         Returns:
-            str: 共鸣解放技能的按键字符串。
+            str: 终结技的按键字符串。
         """
         return self.key_config['Ultimate Key']
 
     def get_geniemon_key(self):
-        """获取声骸技能的按键。
+        """获取魔灵支援的按键。
 
         Returns:
-            str: 声骸技能的按键字符串。
+            str: 魔灵支援的按键字符串。
         """
         return self.key_config['Geniemon Key']
 
     def get_combat_key(self):
-        """获取共鸣技能的按键。
+        """获取战技的按键。
 
         Returns:
-            str: 共鸣技能的按键字符串。
+            str: 战技的按键字符串。
         """
         return self.key_config['Combat Key']
     

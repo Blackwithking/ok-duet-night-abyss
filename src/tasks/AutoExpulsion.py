@@ -4,12 +4,11 @@ import time
 from ok import Logger, TaskDisabledException
 from src.tasks.DNAOneTimeTask import DNAOneTimeTask
 from src.tasks.CommissionsTask import CommissionsTask, Mission
-from src.tasks.BaseCombatTask import BaseCombatTask
 
 logger = Logger.get_logger(__name__)
 
 
-class AutoExpulsion(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
+class AutoExpulsion(DNAOneTimeTask, CommissionsTask):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -47,6 +46,7 @@ class AutoExpulsion(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
         while True:
             if self.in_team():
                 if _start_time == 0:
+                    self.move_on_begin()
                     _start_time = time.time()
                 _skill_time = self.use_skill(_skill_time)
                 if time.time() - _start_time >= self.config.get('任务超时时间', 120):
@@ -62,6 +62,9 @@ class AutoExpulsion(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
                     return
                 self.wait_until(self.in_team, time_out=30)
                 _start_time = time.time()
-                if (walk_sec:=self.config.get('开局向前走', 0)) > 0:
-                    self.send_key('w', down_time=walk_sec)
+                self.move_on_begin()
             self.sleep(0.2)
+
+    def move_on_begin(self):
+        if (walk_sec:=self.config.get('开局向前走', 0)) > 0:
+            self.send_key('w', down_time=walk_sec)

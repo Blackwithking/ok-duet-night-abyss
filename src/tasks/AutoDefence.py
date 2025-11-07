@@ -4,14 +4,13 @@ import cv2
 import re
 
 from ok import Logger, TaskDisabledException, Box
-from src.tasks.BaseCombatTask import BaseCombatTask
 from src.tasks.DNAOneTimeTask import DNAOneTimeTask
 from src.tasks.CommissionsTask import CommissionsTask, Mission, QuickMoveTask
 
 logger = Logger.get_logger(__name__)
 
 
-class AutoDefence(DNAOneTimeTask, BaseCombatTask, CommissionsTask):
+class AutoDefence(DNAOneTimeTask, CommissionsTask):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -28,8 +27,6 @@ class AutoDefence(DNAOneTimeTask, BaseCombatTask, CommissionsTask):
         self.setup_commission_config()
         self.name = "自动扼守"
         self.action_timeout = 10
-        self.current_round = -1
-        self.current_wave = -1
         self.quick_move_task = QuickMoveTask(self)
         
     def run(self):

@@ -11,12 +11,11 @@ from src.tasks.CommissionsTask import CommissionsTask
 logger = Logger.get_logger(__name__)
 
 
-class AutoSkill(DNAOneTimeTask, BaseCombatTask, CommissionsTask):
+class AutoSkill(DNAOneTimeTask, CommissionsTask):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.icon = FluentIcon.FLAG
-        #  self.description = "使用水母姐"
         self.default_config.update({
             '使用技能': '不使用',
             '技能释放频率': 5,

@@ -4,14 +4,13 @@ import cv2
 import re
 
 from ok import Logger, TaskDisabledException, Box, find_color_rectangles
-from src.tasks.BaseCombatTask import BaseCombatTask
 from src.tasks.DNAOneTimeTask import DNAOneTimeTask
 from src.tasks.CommissionsTask import CommissionsTask, QuickMoveTask, Mission
 
 logger = Logger.get_logger(__name__)
 
 
-class AutoExcavation(DNAOneTimeTask, BaseCombatTask, CommissionsTask):
+class AutoExcavation(DNAOneTimeTask, CommissionsTask):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -26,7 +25,6 @@ class AutoExcavation(DNAOneTimeTask, BaseCombatTask, CommissionsTask):
         self.setup_commission_config()
         self.name = "自动勘察"
         self.action_timeout = 10
-        self.current_round = -1
         self.progressing = False
         self.quick_move_task = QuickMoveTask(self)
         
