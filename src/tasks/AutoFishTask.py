@@ -16,7 +16,7 @@ class AutoFishTask(DNAOneTimeTask, BaseDNATask):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.name = "自动钓鱼"
-        self.description = "无悠闲全自动钓鱼，如果识别不到鱼条修改配置降低面积要求"
+        self.description = "无悠闲全自动钓鱼 (作者: B站无敌大蜜瓜)，如果识别不到鱼条修改配置降低面积要求"
 
         # 默认配置（会被 configs/AutoFishTask.json 覆盖）
         self.default_config.update(
@@ -72,7 +72,10 @@ class AutoFishTask(DNAOneTimeTask, BaseDNATask):
     def find_fish_bite(self) -> tuple[bool, tuple]:
         """查找 fish_bite 图标（等待鱼上钩），返回 (found, center)"""
         BITE_THRESHOLD = 0.8  # fish_bite 匹配阈值
-        box = self.find_one("fish_bite", threshold=BITE_THRESHOLD)
+        fish_bite_box = self.box_of_screen_scaled(
+            2560, 1440, 2113, 1057, 2244, 1174, name="fish_bite"
+        )
+        box = self.find_one("fish_bite", box=fish_bite_box, threshold=BITE_THRESHOLD)
         if box:
             return True, (box.x + box.width // 2, box.y + box.height // 2)
         return False, (0, 0)
