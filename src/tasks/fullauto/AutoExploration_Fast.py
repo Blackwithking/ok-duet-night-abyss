@@ -48,7 +48,7 @@ class AutoExploration_Fast(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
             _to_do_task = self.get_task_by_class(AutoExploration)
             _to_do_task.config_external_movement(self.walk_to_aim, self.config)
             return _to_do_task.do_run()
-        except TaskDisabledException as e:
+        except TaskDisabledException:
             pass
         except Exception as e:
             logger.error('AutoDefence error', e)

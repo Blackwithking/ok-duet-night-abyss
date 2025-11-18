@@ -114,7 +114,7 @@ class Auto65ArtifactTask_Fast(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
                 try:
                     self.walk_to_aim()
                 except TaskDisabledException:
-                    raise TaskDisabledException
+                    raise
                 except Exception as e:
                     logger.error(f"移动到目标位置失败: {e}")
                     self.give_up_mission()
@@ -220,7 +220,7 @@ class Auto65ArtifactTask_Fast(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
             logger.info(f"移动完成，用时 {elapsed:.1f}秒")
 
         except TaskDisabledException:
-            raise TaskDisabledException
+            raise
         except Exception as e:
             logger.error(f"移动过程出错: {e}")
             raise
