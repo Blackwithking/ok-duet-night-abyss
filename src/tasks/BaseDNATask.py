@@ -7,6 +7,8 @@ import win32api
 import win32con
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor
+from functools import cached_property
+from ok import Logger, TaskDisabledException, GenshinInteraction
 
 from ok import BaseTask, Box, Logger, color_range_to_bound, run_in_new_thread, og
 
@@ -73,6 +75,7 @@ class BaseDNATask(BaseTask):
         self.old_mouse_pos = None
         self.next_monthly_card_start = 0
         self._logged_in = False
+        self.sensitivity_config = self.get_global_config('Game Sensitivity Config')  # 游戏灵敏度配置
 
     @property
     def f_search_box(self) -> Box:
@@ -381,6 +384,45 @@ class BaseDNATask(BaseTask):
         """
         return self.key_config['HelixLeap Key']
     
+    @cached_property
+    def genshin_interaction(self):
+        """
+        缓存 Interaction 实例，避免每次鼠标移动都重新创建对象。
+        需要确保 self.executor.interaction 和 self.hwnd 在此类初始化时可用。
+        """
+        # 确保引用的是正确的类
+        return GenshinInteraction(self.executor.interaction.capture, self.hwnd)
+
+        
+    def calculate_sensitivity(self, original_Xsensitivity, original_Ysensitivity, dx, dy):
+        """计算玩家水平鼠标移动值和垂直鼠标移动值,并且移动鼠标.
+
+        Returns:
+            int: 玩家水平鼠标移动值
+            int: 玩家垂直鼠标移动值
+
+        """
+        # 判断设置中灵敏度开关是否打开
+        if self.sensitivity_config['Game Sensitivity Switch'] is True:
+            # 获取设置中的游戏灵敏度
+            game_Xsensitivity = round(self.sensitivity_config['X-axis sensitivity'], 1)
+            game_Ysensitivity = round(self.sensitivity_config['Y-axis sensitivity'], 1)
+
+            # 判断和计算
+            if original_Xsensitivity == game_Xsensitivity and original_Ysensitivity == game_Ysensitivity:
+                calculate_dx = dx
+                calculate_dy = dy
+            else:
+                calculate_dx = dx / round(game_Xsensitivity / original_Xsensitivity, 10)
+                calculate_dy = dy / round(game_Ysensitivity / original_Ysensitivity, 10)
+            
+            self.try_bring_to_front()
+
+            # 使用缓存的实例
+            self.genshin_interaction.move_mouse_relative(int(calculate_dx), int(calculate_dy))
+        else:
+            self.genshin_interaction.move_mouse_relative(int(dx), int(dy))
+
     def try_bring_to_front(self):
         if not self.hwnd.is_foreground():
             win32api.keybd_event(win32con.VK_MENU, 0, 0, 0)
