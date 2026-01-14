@@ -1,10 +1,12 @@
 import re
 import time
+import numpy as np
+import cv2
 from enum import Enum
 from functools import cached_property
 
 from ok import find_boxes_by_name, TaskDisabledException
-from src.tasks.BaseDNATask import BaseDNATask, isolate_white_text_to_black
+from src.tasks.BaseDNATask import BaseDNATask, isolate_white_text_to_black, color_filter
 from src.tasks.config.CommissionConfig import CommissionConfig
 from src.tasks.config.CommissionSkillConfig import CommissionSkillConfig
 
@@ -381,13 +383,29 @@ class CommissionsTask(BaseDNATask):
             return
         box = self.box_of_screen(0.241, 0.361, 0.259, 0.394, name="green_mark", hcenter=True)
         self.wait_until(lambda: self.calculate_color_percentage(green_mark_color, box) > 0.135, time_out=1)
-        round_info_box = self.box_of_screen_scaled(2560, 1440, 531, 517, 618, 602, name="round_info", hcenter=True)
-        texts = self.ocr(box=round_info_box)
+        round_info_box = self.box_of_screen_scaled(2560, 1440, 500, 500, 620, 620, name="round_info", hcenter=True)
+        self.draw_boxes("round_info", round_info_box, color="blue")
+        ocr_frame = self.frame.copy()
+        texts = "N"
+        try:
+            ocr_frame = ocr_frame[round_info_box.y:round_info_box.y+round_info_box.height, 
+                                  round_info_box.x:round_info_box.x+round_info_box.width]
+            ocr_frame = color_filter(ocr_frame, round_info_color)
+            _, ocr_frame = cv2.threshold(ocr_frame, 127, 255, cv2.THRESH_BINARY)
+            ocr_frame = cv2.resize(ocr_frame, None, fx=1, fy=0.75, interpolation=cv2.INTER_AREA)
+            ocr_frame = cv2.erode(ocr_frame, np.ones((2, 2), np.uint8) , iterations=1)
+            ocr_frame = cv2.bitwise_not(ocr_frame)
+            texts = self.ocr(frame=ocr_frame)
+        except Exception as e:
+            self.log_error("get_round_info ocr error", e)
+            pass
+        # self.screenshot(name=f"round_info_ocr_{texts}", frame=ocr_frame)
 
         prev_round = self.current_round
         new_round_from_ocr = None
         if texts and texts[0].name.isdigit():
             new_round_from_ocr = int(texts[0].name)
+            self.log_debug(f"get_round_info ocr 轮次 {new_round_from_ocr}")
 
         if new_round_from_ocr is not None:
             self.current_round = new_round_from_ocr
@@ -576,6 +594,11 @@ green_mark_color = {
     'b': (120, 130)  # Blue range
 }
 
+round_info_color = {
+    'r': (200, 255),  # Red range
+    'g': (200, 255),  # Green range
+    'b': (200, 255)  # Blue range
+}
 
 def _default_movement():
     pass
