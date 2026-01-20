@@ -123,6 +123,7 @@ config = {
     'links': { # 关于里显示的链接, 可选
             'default': {
                 'github': 'https://github.com/BnanZ0/ok-duet-night-abyss',
+                'sponsor': 'https://ko-fi.com/bnanz',
                 'qq_group': 'https://qm.qq.com/q/iF3bfUflY',
                 'qq_channel': 'https://pd.qq.com/s/djmm6l44y',
                 'discord': 'https://discord.gg/vVyCatEBgA',
